@@ -1,4 +1,5 @@
 import sqlite3
+
 import streamlit as st
 
 # データベースのセットアップ
@@ -59,6 +60,18 @@ def on_checkbox_change(task_id, is_checked):
     )  # 再レンダリングをトリガー
 
 
+def delete_task(task_id):
+    """タスクを削除する"""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    conn.commit()
+    conn.close()
+    st.session_state["rerun"] = not st.session_state.get(
+        "rerun", False
+    )  # 再レンダリングをトリガー
+
+
 # データベースの初期化
 init_db()
 
@@ -76,7 +89,7 @@ if st.button("追加"):
 tasks = get_tasks()  # タスク取得関数
 if tasks:
     for task_id, task, completed in tasks:
-        col1, col2 = st.columns([4, 1])
+        col1, col2, col3 = st.columns([4, 1, 1])
 
         # 完了したタスクには横線を引く
         task_text = f"<s>{task}</s>" if completed else task
@@ -92,5 +105,14 @@ if tasks:
 
         # タスク名の表示（完了した場合に横線）
         col1.markdown(task_text, unsafe_allow_html=True)
+
+        # 削除ボタン
+        col3.button(
+            "削除",
+            key=f"delete_{task_id}",
+            on_click=delete_task,
+            args=(task_id,),
+        )
+
 else:
     st.info("現在、タスクはありません。")
